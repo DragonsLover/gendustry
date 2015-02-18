@@ -13,6 +13,7 @@ import java.util
 
 import mcp.mobius.waila.api.{IWailaConfigHandler, IWailaDataAccessor, IWailaDataProvider}
 import net.bdew.gendustry.Gendustry
+import net.minecraft.entity.player.EntityPlayerMP
 import net.minecraft.item.ItemStack
 import net.minecraft.nbt.NBTTagCompound
 import net.minecraft.tileentity.TileEntity
@@ -23,8 +24,19 @@ class BaseDataProvider[T](cls: Class[T]) extends IWailaDataProvider {
   def getTailStrings(target: T, stack: ItemStack, acc: IWailaDataAccessor, cfg: IWailaConfigHandler): Iterable[String] = None
   def getHeadStrings(target: T, stack: ItemStack, acc: IWailaDataAccessor, cfg: IWailaConfigHandler): Iterable[String] = None
   def getBodyStrings(target: T, stack: ItemStack, acc: IWailaDataAccessor, cfg: IWailaConfigHandler): Iterable[String] = None
+  def getNBTTag(player: EntityPlayerMP, te: T, tag: NBTTagCompound, world: World, x: Int, y: Int, z: Int): NBTTagCompound = tag
 
-  override def getNBTData(te: TileEntity, tag: NBTTagCompound, world: World, x: Int, y: Int, z: Int) = null
+  final override def getNBTData(player: EntityPlayerMP, te: TileEntity, tag: NBTTagCompound, world: World, x: Int, y: Int, z: Int): NBTTagCompound =
+    try {
+      if (cls.isInstance(te))
+        getNBTTag(player, te.asInstanceOf[T], tag, world, x, y, z)
+      else
+        tag
+    } catch {
+      case e: Throwable =>
+        Gendustry.logWarnException("Error in waila handler", e)
+        tag
+    }
 
   import scala.collection.JavaConversions._
 
@@ -73,5 +85,5 @@ class BaseDataProvider[T](cls: Class[T]) extends IWailaDataProvider {
     tip
   }
 
-  override def getWailaStack(accessor: IWailaDataAccessor, config: IWailaConfigHandler) = null
+  override def getWailaStack(accessor: IWailaDataAccessor, config: IWailaConfigHandler): ItemStack = null
 }
